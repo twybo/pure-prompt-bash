@@ -8,24 +8,24 @@
 # released under MIT License, see LICENSE
 
 # Colors
-readonly BLACK=$(tput setaf 0)
-readonly RED=$(tput setaf 1)
-readonly GREEN=$(tput setaf 2)
-readonly YELLOW=$(tput setaf 3)
-readonly BLUE=$(tput setaf 4)
-readonly MAGENTA=$(tput setaf 5)
-readonly CYAN=$(tput setaf 6)
-readonly WHITE=$(tput setaf 7)
-readonly BRIGHT_BLACK=$(tput setaf 8)
-readonly BRIGHT_RED=$(tput setaf 9)
-readonly BRIGHT_GREEN=$(tput setaf 10)
-readonly BRIGHT_YELLOW=$(tput setaf 11)
-readonly BRIGHT_BLUE=$(tput setaf 12)
-readonly BRIGHT_MAGENTA=$(tput setaf 13)
-readonly BRIGHT_CYAN=$(tput setaf 14)
-readonly BRIGHT_WHITE=$(tput setaf 15)
+BLACK=$(tput setaf 0)
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+YELLOW=$(tput setaf 3)
+BLUE=$(tput setaf 4)
+MAGENTA=$(tput setaf 5)
+CYAN=$(tput setaf 6)
+WHITE=$(tput setaf 7)
+BRIGHT_BLACK=$(tput setaf 8)
+BRIGHT_RED=$(tput setaf 9)
+BRIGHT_GREEN=$(tput setaf 10)
+BRIGHT_YELLOW=$(tput setaf 11)
+BRIGHT_BLUE=$(tput setaf 12)
+BRIGHT_MAGENTA=$(tput setaf 13)
+BRIGHT_CYAN=$(tput setaf 14)
+BRIGHT_WHITE=$(tput setaf 15)
 
-readonly RESET=$(tput sgr0)
+RESET=$(tput sgr0)
 
 # symbols
 pure_prompt_symbol="❯"
@@ -60,10 +60,10 @@ __pure_echo_git_remote_status() {
 		# do async
 		# FIXME: this async execution doesn't change pure_git_raw_remote_status. so remote status never changes in async mode
 		# FIXME: async mode takes as long as sync mode
-		pure_git_raw_remote_status=$(git status --porcelain=2 --branch | grep --only-matching -E '\+\d+ \-\d+') &
+		pure_git_raw_remote_status=$(git status --porcelain --branch | grep --only-matching -E 'ahead \d+|behind \d+') &
 	else
 		# do sync
-		pure_git_raw_remote_status=$(git status --porcelain=2 --branch | grep --only-matching -E '\+\d+ \-\d+')
+		pure_git_raw_remote_status=$(git status --porcelain --branch | grep --only-matching -E 'ahead \d+|behind \d+')
 	fi
 
 	# shape raw status and check unpulled commit
@@ -105,7 +105,7 @@ __pure_update_git_status() {
 		# if current directory isn't git repository, skip this
 		if [[ $(git rev-parse --is-inside-work-tree 2> /dev/null) == "true" ]]; then
 
-			git_status="$(git branch --show-current)"
+			git_status="$(git rev-parse --abbrev-ref HEAD)"
 
 			# check clean/dirty
 			git_status="${git_status}$(git diff --quiet || echo "${pure_symbol_dirty}")"
@@ -153,12 +153,12 @@ PROMPT_COMMAND="__pure_update_prompt_color; ${PROMPT_COMMAND}"
 
 pure_context=""
 ${pure_is_remote} && pure_context="${pure_context}${BRIGHT_YELLOW}\u@\h${RESET} "
-${pure_is_singularity} && pure_context="${pure_context}${CYAN}[singularity]${RESET} "
+${pure_is_singularity} && pure_context="${pure_context}${RED}[singularity]${RESET} "
 
-readonly FIRST_LINE="${pure_context}${CYAN}\w \${pure_git_status}\n"
+FIRST_LINE="${pure_context}${CYAN}\w \${pure_git_status}\n"
 # raw using of $ANY_COLOR (or $(tput setaf ***)) here causes a creepy bug when go back history with up arrow key
 # I couldn't find why it occurs
-readonly SECOND_LINE="\[\${pure_prompt_color}\]${pure_prompt_symbol}\[$RESET\] "
+SECOND_LINE="\[\${pure_prompt_color}\]${pure_prompt_symbol}\[$RESET\] "
 PS1="\n${FIRST_LINE}"
 PS1="${PS1}\[\e[2;37m\](bash)\[\e[0m\] ${SECOND_LINE}"
 
