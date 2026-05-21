@@ -38,6 +38,20 @@ pure_symbol_dirty="*"
 pure_git_async_update=false
 pure_git_raw_remote_status="+0 -0"
 
+# detect remote shell
+if [[ -n "$SSH_CLIENT" || -n "$SSH_TTY" || -n "$SSH_CONNECTION" ]]; then
+    pure_is_remote=true
+else
+    pure_is_remote=false
+fi
+
+# detect singularity
+if [[ -n "$SINGULARITY_NAME" || -n "$SINGULARITY_CONTAINER" ]]; then
+    pure_is_singularity=true
+else
+    pure_is_singularity=false
+fi
+
 
 __pure_echo_git_remote_status() {
 
@@ -46,14 +60,14 @@ __pure_echo_git_remote_status() {
 		# do async
 		# FIXME: this async execution doesn't change pure_git_raw_remote_status. so remote status never changes in async mode
 		# FIXME: async mode takes as long as sync mode
-		pure_git_raw_remote_status=$(git status --porcelain=2 --branch | grep --only-matching --perl-regexp '\+\d+ \-\d+') &
+		pure_git_raw_remote_status=$(git status --porcelain=2 --branch | grep --only-matching -E '\+\d+ \-\d+') &
 	else
 		# do sync
-		pure_git_raw_remote_status=$(git status --porcelain=2 --branch | grep --only-matching --perl-regexp '\+\d+ \-\d+')
+		pure_git_raw_remote_status=$(git status --porcelain=2 --branch | grep --only-matching -E '\+\d+ \-\d+')
 	fi
 
 	# shape raw status and check unpulled commit
-	local readonly UNPULLED=$(echo ${pure_git_raw_remote_status} | grep --only-matching --perl-regexp '\-\d')
+	local readonly UNPULLED=$(echo ${pure_git_raw_remote_status} | grep --only-matching -E '\-\d')
 	if [[ ${UNPULLED} != "-0" ]]; then
 		pure_git_unpulled=true
 	else
@@ -61,7 +75,7 @@ __pure_echo_git_remote_status() {
 	fi
 
 	# unpushed commit too
-	local readonly UNPUSHED=$(echo ${pure_git_raw_remote_status} | grep --only-matching --perl-regexp '\+\d')
+	local readonly UNPUSHED=$(echo ${pure_git_raw_remote_status} | grep --only-matching -E '\+\d')
 	if [[ ${UNPUSHED} != "+0" ]]; then
 		pure_git_unpushed=true
 	else
@@ -137,11 +151,16 @@ fi
 PROMPT_COMMAND="__pure_update_prompt_color; ${PROMPT_COMMAND}"
 
 
-readonly FIRST_LINE="${CYAN}\w \${pure_git_status}\n"
+pure_context=""
+${pure_is_remote} && pure_context="${pure_context}${BRIGHT_YELLOW}\u@\h${RESET} "
+${pure_is_singularity} && pure_context="${pure_context}${CYAN}[singularity]${RESET} "
+
+readonly FIRST_LINE="${pure_context}${CYAN}\w \${pure_git_status}\n"
 # raw using of $ANY_COLOR (or $(tput setaf ***)) here causes a creepy bug when go back history with up arrow key
 # I couldn't find why it occurs
 readonly SECOND_LINE="\[\${pure_prompt_color}\]${pure_prompt_symbol}\[$RESET\] "
-PS1="\n${FIRST_LINE}${SECOND_LINE}"
+PS1="\n${FIRST_LINE}"
+PS1="${PS1}\[\e[2;37m\](bash)\[\e[0m\] ${SECOND_LINE}"
 
 # Multiline command
 PS2="\[$BLUE\]${prompt_symbol}\[$RESET\] "
